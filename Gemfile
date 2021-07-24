@@ -4,7 +4,7 @@ source 'https://rubygems.org'
 
 gemspec
 
-gem 'mongoid', '~> 7.0'
+gem 'mongoid', '~> 7.3'
 
 group :test do
   gem 'rspec', '~> 3.8'

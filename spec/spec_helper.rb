@@ -1,5 +1,5 @@
 $LOAD_PATH.unshift(File.dirname(__FILE__))
-$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), "..", "lib"))
+$LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
 require 'mongoid'
 require 'mongoid/archivable'
@@ -34,11 +34,6 @@ RSpec.configure do |config|
   config.after(:all) do
     Mongoid.purge!
   end
-
-  # Filter out MongoHQ specs if we can't connect to it.
-  config.filter_run_excluding(config: ->(value) {
-    return true if value == :mongohq && !mongohq_connectable?
-  })
 end
 
 ActiveSupport::Inflector.inflections do |inflect|

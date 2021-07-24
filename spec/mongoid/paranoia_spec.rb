@@ -532,10 +532,10 @@ describe Mongoid::Archivable do
         post.delete!
       end
 
-      it "cascades the dependent option" do
+      it "does not cascade the dependent option" do
         expect {
           author.reload
-        }.to raise_error(Mongoid::Errors::DocumentNotFound)
+        }.to_not raise_error(Mongoid::Errors::DocumentNotFound)
       end
     end
   end
@@ -614,10 +614,10 @@ describe Mongoid::Archivable do
         post.delete
       end
 
-      it "cascades the dependent option" do
+      it "does not cascade the dependent option" do
         expect {
           author.reload
-        }.to raise_error(Mongoid::Errors::DocumentNotFound)
+        }.to_not raise_error(Mongoid::Errors::DocumentNotFound)
       end
     end
 
@@ -638,8 +638,8 @@ describe Mongoid::Archivable do
         end
       end
 
-      it "does not destroy the document" do
-        expect(post).not_to be_destroyed
+      it "ignores restrict and destroys the document" do
+        expect(post).to be_destroyed
       end
     end
   end
