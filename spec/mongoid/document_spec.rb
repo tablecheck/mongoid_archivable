@@ -2,19 +2,19 @@ require "spec_helper"
 
 describe Mongoid::Document do
 
-  describe ".paranoid?" do
+  describe ".archivable?" do
 
-    context "when Mongoid::Paranoia is included" do
-      subject { ParanoidPost }
+    context "when Mongoid::Archivable is included" do
+      subject { ArchivablePost }
       it "returns true" do
-        expect(subject.paranoid?).to be_truthy
+        expect(subject.archivable?).to eq true
       end
     end
 
-    context "when Mongoid::Paranoia not included" do
+    context "when Mongoid::Archivable not included" do
       subject { Author }
       it "returns true" do
-        expect(subject.paranoid?).to be_falsey
+        expect(subject.respond_to?(:archivable?)).to eq false
       end
     end
   end

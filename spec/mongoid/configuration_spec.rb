@@ -1,17 +1,17 @@
 require "spec_helper"
 
 module Mongoid
-  module Paranoia
+  module Archivable
     describe Configuration do
-      describe '#paranoid_field' do
-        it 'initializes with default value set to :deleted_at' do
-          expect(Configuration.new.paranoid_field).to eq(:deleted_at)
+      describe '#archivable_field' do
+        it 'initializes with default value set to :archived_at' do
+          expect(Configuration.new.archivable_field).to eq(:archived_at)
         end
 
         it 'can be updated' do
           config = Configuration.new
-          config.paranoid_field = :myFieldName
-          expect(config.paranoid_field).to eq(:myFieldName)
+          config.archivable_field = :myFieldName
+          expect(config.archivable_field).to eq(:myFieldName)
         end
       end
     end

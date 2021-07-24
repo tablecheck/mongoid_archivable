@@ -1,6 +1,6 @@
 class Fish
   include Mongoid::Document
-  include Mongoid::Paranoia
+  include Mongoid::Archivable
 
   def self.fresh
     where(fresh: true)

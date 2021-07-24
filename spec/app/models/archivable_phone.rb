@@ -1,6 +1,6 @@
-class ParanoidPhone
+class ArchivablePhone
   include Mongoid::Document
-  include Mongoid::Paranoia
+  include Mongoid::Archivable
 
   attr_accessor :after_destroy_called, :before_destroy_called
 

@@ -1,46 +1,46 @@
 require "spec_helper"
 
-describe Mongoid::Paranoia do
-  context 'configuring the paranoid_field setting' do
+describe Mongoid::Archivable do
+  context 'configuring the archivable_field setting' do
     before do
-      Mongoid::Paranoia.configure do |c|
-        c.paranoid_field = :myFieldName
+      Mongoid::Archivable.configure do |c|
+        c.archivable_field = :myFieldName
       end
     end
 
     describe '.configure' do
       before do
-        class ParanoidConfigured
+        class ArchivableConfigured
           include Mongoid::Document
-          include Mongoid::Paranoia
+          include Mongoid::Archivable
         end
       end
 
-      it 'allows custom setting of the paranoid_field' do
-        paranoid_configured = ParanoidConfigured.new
-        expect(paranoid_configured.attribute_names).to include('myFieldName')
+      it 'allows custom setting of the archivable_field' do
+        archivable_configured = ArchivableConfigured.new
+        expect(archivable_configured.attribute_names).to include('myFieldName')
       end
 
       after(:each) do
-        Mongoid::Paranoia.reset
+        Mongoid::Archivable.reset
       end
     end
 
     describe '.reset' do
       before do
-        Mongoid::Paranoia.reset
+        Mongoid::Archivable.reset
 
         # the configuration gets set at include time
         # so you need to reset before defining a new class
-        class ParanoidConfiguredReset
+        class ArchivableConfiguredReset
           include Mongoid::Document
-          include Mongoid::Paranoia
+          include Mongoid::Archivable
         end
       end
 
-      it 'restores the paranoid_field to the default setting' do
-        paranoid_configured = ParanoidConfiguredReset.new
-        expect(paranoid_configured.attribute_names).to include('deleted_at')
+      it 'restores the archivable_field to the default setting' do
+        archivable_configured = ArchivableConfiguredReset.new
+        expect(archivable_configured.attribute_names).to include('archived_at')
       end
     end
   end
@@ -48,28 +48,28 @@ describe Mongoid::Paranoia do
   describe ".scoped" do
 
     it "returns a scoped criteria" do
-      expect(ParanoidPost.scoped.selector).to eq({ "deleted_at" => nil })
+      expect(ArchivablePost.scoped.selector).to eq({})
     end
   end
 
-  describe ".deleted" do
+  describe ".archived" do
 
     context "when called on a root document" do
 
       let(:post) do
-        ParanoidPost.create(title: "testing")
+        ArchivablePost.create(title: "testing")
       end
 
       before do
         post.destroy
       end
 
-      let(:deleted) do
-        ParanoidPost.deleted
+      let(:archived) do
+        ArchivablePost.archived
       end
 
-      it "returns the deleted documents" do
-        expect(deleted).to eq([ post ])
+      it "returns the archived documents" do
+        expect(archived).to eq([ post ])
       end
     end
 
@@ -80,7 +80,7 @@ describe Mongoid::Paranoia do
       end
 
       let(:phone) do
-        person.paranoid_phones.create
+        person.archivable_phones.create
       end
 
       before do
@@ -88,12 +88,12 @@ describe Mongoid::Paranoia do
         person.reload
       end
 
-      it "returns the deleted documents" do
-        expect(person.paranoid_phones.deleted.to_a).to eq([ phone ])
+      it "returns the archived documents" do
+        expect(person.archivable_phones.archived.to_a).to eq([ phone ])
       end
 
       it "returns the correct count" do
-        expect(person.paranoid_phones.deleted.count).to eq(1)
+        expect(person.archivable_phones.archived.count).to eq(1)
       end
     end
   end
@@ -103,15 +103,17 @@ describe Mongoid::Paranoia do
     context "when the document is a root" do
 
       let(:post) do
-        ParanoidPost.create(title: "testing")
+        ArchivablePost.create(title: "testing")
       end
 
       before do
+        puts 'yyy'
         post.destroy!
+        puts 'zzz'
       end
 
       let(:raw) do
-        ParanoidPost.collection.find(_id: post.id).first
+        ArchivablePost.collection.find(_id: post.id).first
       end
 
       it "hard deletes the document" do
@@ -126,12 +128,12 @@ describe Mongoid::Paranoia do
         expect(post.after_destroy_called).to be_truthy
       end
 
-      it "executes the before remove callbacks" do
-        expect(post.before_remove_called).to be_truthy
+      it "does not execute the before archive callbacks" do
+        expect(post.before_archive_called).to be_falsey
       end
 
-      it "executes the after remove callbacks" do
-        expect(post.after_remove_called).to be_truthy
+      it "does not execute the after archive callbacks" do
+        expect(post.after_archive_called).to be_falsey
       end
     end
 
@@ -142,7 +144,7 @@ describe Mongoid::Paranoia do
       end
 
       let(:phone) do
-        person.paranoid_phones.create(number: "911")
+        person.archivable_phones.create(number: "911")
       end
 
       before do
@@ -154,7 +156,7 @@ describe Mongoid::Paranoia do
       end
 
       it "hard deletes the document" do
-        expect(raw["paranoid_phones"]).to be_empty
+        expect(raw["archivable_phones"]).to be_empty
       end
 
       it "executes the before destroy callbacks" do
@@ -169,7 +171,7 @@ describe Mongoid::Paranoia do
     context "when the document has a dependent relation" do
 
       let(:post) do
-        ParanoidPost.create(title: "test")
+        ArchivablePost.create(title: "test")
       end
 
       let!(:author) do
@@ -193,7 +195,7 @@ describe Mongoid::Paranoia do
     context "when the document is a root" do
 
       let(:post) do
-        ParanoidPost.create(title: "testing")
+        ArchivablePost.create(title: "testing")
       end
 
       before do
@@ -201,11 +203,11 @@ describe Mongoid::Paranoia do
       end
 
       let(:raw) do
-        ParanoidPost.collection.find(_id: post.id).first
+        ArchivablePost.collection.find(_id: post.id).first
       end
 
-      it "soft deletes the document" do
-        expect(raw["deleted_at"]).to be_within(1).of(Time.now)
+      it "archives the document" do
+        expect(raw["archived_at"]).to be_within(1).of(Time.now)
       end
 
       it "is still marked as persisted" do
@@ -213,73 +215,71 @@ describe Mongoid::Paranoia do
       end
 
       it "does not return the document in a find" do
-        expect {
-          ParanoidPost.find(post.id)
-        }.to raise_error(Mongoid::Errors::DocumentNotFound)
+        expect(ArchivablePost.find(post.id)).to eq post
       end
 
       it "executes the before destroy callbacks" do
-        expect(post.before_destroy_called).to be_truthy
+        expect(post.before_destroy_called).to be_falsey
       end
 
       it "executes the after destroy callbacks" do
-        expect(post.after_destroy_called).to be_truthy
+        expect(post.after_destroy_called).to be_falsey
       end
 
-      it "does not execute the before remove callbacks" do
-        expect(post.before_remove_called).to be_falsey
+      it "does not execute the before archive callbacks" do
+        expect(post.before_archive_called).to be_truthy
       end
 
-      it "does not execute the after remove callbacks" do
-        expect(post.after_remove_called).to be_falsey
-      end
-    end
-
-    context "when the document is embedded" do
-
-      let(:person) do
-        Person.create
-      end
-
-      let(:phone) do
-        person.paranoid_phones.create(number: "911")
-      end
-
-      before do
-        phone.destroy
-      end
-
-      let(:raw) do
-        Person.collection.find(_id: person.id).first
-      end
-
-      it "soft deletes the document" do
-        expect(raw["paranoid_phones"].first["deleted_at"]).to be_within(1).of(Time.now)
-      end
-
-      it "does not return the document in a find" do
-        expect {
-          person.paranoid_phones.find(phone.id)
-        }.to raise_error(Mongoid::Errors::DocumentNotFound)
-      end
-
-      it "does not include the document in the relation" do
-        expect(person.paranoid_phones.scoped).to be_empty
-      end
-
-      it "executes the before destroy callbacks" do
-        expect(phone.before_destroy_called).to be_truthy
-      end
-
-      it "executes the after destroy callbacks" do
-        expect(phone.after_destroy_called).to be_truthy
+      it "does not execute the after archive callbacks" do
+        expect(post.after_archive_called).to be_truthy
       end
     end
+
+    # context "when the document is embedded" do
+    #
+    #   let(:person) do
+    #     Person.create
+    #   end
+    #
+    #   let(:phone) do
+    #     person.archivable_phones.create(number: "911")
+    #   end
+    #
+    #   before do
+    #     phone.destroy
+    #   end
+    #
+    #   let(:raw) do
+    #     Person.collection.find(_id: person.id).first
+    #   end
+    #
+    #   it "archives the document" do
+    #     expect(raw["archivable_phones"].first["archived_at"]).to be_within(1).of(Time.now)
+    #   end
+    #
+    #   it "does not return the document in a find" do
+    #     expect {
+    #       person.archivable_phones.find(phone.id)
+    #     }.to raise_error(Mongoid::Errors::DocumentNotFound)
+    #   end
+    #
+    #   it "does not include the document in the relation" do
+    #     expect(person.archivable_phones.scoped).to be_empty
+    #   end
+    #
+    #   it "executes the before destroy callbacks" do
+    #     expect(phone.before_destroy_called).to be_truthy
+    #   end
+    #
+    #   it "executes the after destroy callbacks" do
+    #     expect(phone.after_destroy_called).to be_truthy
+    #   end
+    # end
 
     context "when the document has a dependent: :delete relation" do
 
       let(:post) do
-        ParanoidPost.create(title: "test")
+        ArchivablePost.create(title: "test")
       end
 
       let!(:author) do
@@ -291,16 +291,14 @@ describe Mongoid::Paranoia do
       end
 
       it "cascades the dependent option" do
-        expect {
-          author.reload
-        }.to raise_error(Mongoid::Errors::DocumentNotFound)
+        expect(author.reload.archived_at).to be_a(Time)
       end
     end
 
     context "when the document has a dependent: :restrict relation" do
 
       let(:post) do
-        ParanoidPost.create(title: "test")
+        ArchivablePost.create(title: 'test')
       end
 
       let!(:title) do
@@ -325,7 +323,7 @@ describe Mongoid::Paranoia do
     context "when the document is a root" do
 
       let(:post) do
-        ParanoidPost.create(title: "testing")
+        ArchivablePost.create(title: "testing")
       end
 
       context "when the document is hard deleted" do
@@ -339,7 +337,7 @@ describe Mongoid::Paranoia do
         end
       end
 
-      context "when the document is soft deleted" do
+      context "when the document is archived" do
 
         before do
           post.destroy
@@ -349,8 +347,8 @@ describe Mongoid::Paranoia do
           expect(post).to be_destroyed
         end
 
-        it "returns true for deleted scope document" do
-          expect(ParanoidPost.deleted.last).to be_destroyed
+        it "returns true for archived scope document" do
+          expect(ArchivablePost.archived.last).to be_destroyed
         end
       end
     end
@@ -362,7 +360,7 @@ describe Mongoid::Paranoia do
       end
 
       let(:phone) do
-        person.paranoid_phones.create(number: "911")
+        person.archivable_phones.create(number: "911")
       end
 
       context "when the document is hard deleted" do
@@ -376,25 +374,26 @@ describe Mongoid::Paranoia do
         end
       end
 
-      context "when the document is soft deleted" do
+      context "when the document is archived" do
 
         before do
-          phone.destroy
+          phone.archive
         end
 
         it "returns true" do
-          expect(phone).to be_destroyed
+          expect(phone).to_not be_destroyed
+          expect(phone).to be_archived
         end
       end
     end
   end
 
-  describe "#deleted?" do
+  describe "#archived?" do
 
     context "when the document is a root" do
 
       let(:post) do
-        ParanoidPost.create(title: "testing")
+        ArchivablePost.create(title: "testing")
       end
 
       context "when the document is hard deleted" do
@@ -404,18 +403,19 @@ describe Mongoid::Paranoia do
         end
 
         it "returns true" do
-          expect(post).to be_deleted
+          expect(post).to be_destroyed
+          expect(post).to_not be_archived
         end
       end
 
-      context "when the document is soft deleted" do
+      context "when the document is archived" do
 
         before do
           post.destroy
         end
 
         it "returns true" do
-          expect(post).to be_deleted
+          expect(post).to be_archived
         end
       end
     end
@@ -427,7 +427,7 @@ describe Mongoid::Paranoia do
       end
 
       let(:phone) do
-        person.paranoid_phones.create(number: "911")
+        person.archivable_phones.create(number: "911")
       end
 
       context "when the document is hard deleted" do
@@ -437,24 +437,25 @@ describe Mongoid::Paranoia do
         end
 
         it "returns true" do
-          expect(phone).to be_deleted
+          expect(phone).to be_destroyed
+          expect(phone).to_not be_archived
         end
       end
 
-      context "when the document is soft deleted" do
+      context "when the document is archived" do
 
         before do
           phone.destroy
         end
 
         it "returns true" do
-          expect(phone).to be_deleted
+          expect(phone).to be_archived
         end
       end
 
       context "when the document has non-dependent relation" do
         let(:post) do
-          ParanoidPost.create(title: "test")
+          ArchivablePost.create(title: "test")
         end
 
         let!(:tag) do
@@ -478,7 +479,7 @@ describe Mongoid::Paranoia do
     context "when the document is a root" do
 
       let(:post) do
-        ParanoidPost.create(title: "testing")
+        ArchivablePost.create(title: "testing")
       end
 
       before do
@@ -486,7 +487,7 @@ describe Mongoid::Paranoia do
       end
 
       let(:raw) do
-        ParanoidPost.collection.find(_id: post.id).first
+        ArchivablePost.collection.find(_id: post.id).first
       end
 
       it "hard deletes the document" do
@@ -501,7 +502,7 @@ describe Mongoid::Paranoia do
       end
 
       let(:phone) do
-        person.paranoid_phones.create(number: "911")
+        person.archivable_phones.create(number: "911")
       end
 
       before do
@@ -513,14 +514,14 @@ describe Mongoid::Paranoia do
       end
 
       it "hard deletes the document" do
-        expect(raw["paranoid_phones"]).to be_empty
+        expect(raw["archivable_phones"]).to be_empty
       end
     end
 
     context "when the document has a dependent relation" do
 
       let(:post) do
-        ParanoidPost.create(title: "test")
+        ArchivablePost.create(title: "test")
       end
 
       let!(:author) do
@@ -544,7 +545,7 @@ describe Mongoid::Paranoia do
     context "when the document is a root" do
 
       let(:post) do
-        ParanoidPost.create(title: "testing")
+        ArchivablePost.create(title: "testing")
       end
 
       before do
@@ -552,16 +553,16 @@ describe Mongoid::Paranoia do
       end
 
       let(:raw) do
-        ParanoidPost.collection.find(_id: post.id).first
+        ArchivablePost.collection.find(_id: post.id).first
       end
 
-      it "soft deletes the document" do
-        expect(raw["deleted_at"]).to be_within(1).of(Time.now)
+      it "archives the document" do
+        expect(raw["archived_at"]).to be_within(1).of(Time.now)
       end
 
       it "does not return the document in a find" do
         expect {
-          ParanoidPost.find(post.id)
+          ArchivablePost.find(post.id)
         }.to raise_error(Mongoid::Errors::DocumentNotFound)
       end
     end
@@ -573,7 +574,7 @@ describe Mongoid::Paranoia do
       end
 
       let(:phone) do
-        person.paranoid_phones.create(number: "911")
+        person.archivable_phones.create(number: "911")
       end
 
       before do
@@ -584,25 +585,25 @@ describe Mongoid::Paranoia do
         Person.collection.find(_id: person.id).first
       end
 
-      it "soft deletes the document" do
-        expect(raw["paranoid_phones"].first["deleted_at"]).to be_within(1).of(Time.now)
+      it "archives the document" do
+        expect(raw["archivable_phones"].first["archived_at"]).to be_within(1).of(Time.now)
       end
 
       it "does not return the document in a find" do
         expect {
-          person.paranoid_phones.find(phone.id)
+          person.archivable_phones.find(phone.id)
         }.to raise_error(Mongoid::Errors::DocumentNotFound)
       end
 
       it "does not include the document in the relation" do
-        expect(person.paranoid_phones.scoped).to be_empty
+        expect(person.archivable_phones.scoped).to be_empty
       end
     end
 
     context "when the document has a dependent relation" do
 
       let(:post) do
-        ParanoidPost.create(title: "test")
+        ArchivablePost.create(title: "test")
       end
 
       let!(:author) do
@@ -623,7 +624,7 @@ describe Mongoid::Paranoia do
     context "when the document has a dependent: :restrict relation" do
 
       let(:post) do
-        ParanoidPost.create(title: "test")
+        ArchivablePost.create(title: "test")
       end
 
       let!(:title) do
@@ -646,7 +647,7 @@ describe Mongoid::Paranoia do
   describe "#remove" do
 
     let(:post) do
-      ParanoidPost.new
+      ArchivablePost.new
     end
 
     let!(:time) do
@@ -657,7 +658,7 @@ describe Mongoid::Paranoia do
       post.remove
     end
 
-    it "sets the deleted flag" do
+    it "sets the archived flag" do
       expect(post).to be_destroyed
     end
   end
@@ -667,7 +668,7 @@ describe Mongoid::Paranoia do
     context "when the document is a root" do
 
       let(:post) do
-        ParanoidPost.create(title: "testing")
+        ArchivablePost.create(title: "testing")
       end
 
       before do
@@ -675,12 +676,12 @@ describe Mongoid::Paranoia do
         post.restore
       end
 
-      it "removes the deleted at time" do
-        expect(post.deleted_at).to be_nil
+      it "removes the archived at time" do
+        expect(post.archived_at).to be_nil
       end
 
       it "persists the change" do
-        expect(post.reload.deleted_at).to be_nil
+        expect(post.reload.archived_at).to be_nil
       end
 
       it "marks document again as persisted" do
@@ -711,7 +712,7 @@ describe Mongoid::Paranoia do
       end
 
       let(:phone) do
-        person.paranoid_phones.create(number: "911")
+        person.archivable_phones.create(number: "911")
       end
 
       before do
@@ -719,26 +720,26 @@ describe Mongoid::Paranoia do
         phone.restore
       end
 
-      it "removes the deleted at time" do
-        expect(phone.deleted_at).to be_nil
+      it "removes the archived at time" do
+        expect(phone.archived_at).to be_nil
       end
 
       it "persists the change" do
-        expect(person.reload.paranoid_phones.first.deleted_at).to be_nil
+        expect(person.reload.archivable_phones.first.archived_at).to be_nil
       end
     end
   end
 
   describe "#restore_relations" do
 
-    subject { ParaBase.create }
+    subject { ArchBase.create }
 
-    let!(:para_has_one)     { subject.para_has_one = ParaHasOne.create       }
-    let!(:para_has_many)    { 2.times.map { subject.para_has_many.create }   }
-    let!(:para_habtm)       { 3.times.map { subject.para_habtm.create }      }
-    let!(:para_belongs_to)  { subject.para_belongs_to = ParaBelongsTo.create }
-    let!(:para_embeds_one)  { subject.para_embeds_one = ParaEmbedsOne.new    }
-    let!(:para_embeds_many) { 2.times.map { subject.para_embeds_many.build } }
+    let!(:arch_has_one)     { subject.arch_has_one = ArchHasOne.create       }
+    let!(:arch_has_many)    { 2.times.map { subject.arch_has_many.create }   }
+    let!(:arch_habtm)       { 3.times.map { subject.arch_habtm.create }      }
+    let!(:arch_belongs_to)  { subject.arch_belongs_to = ArchBelongsTo.create }
+    let!(:arch_embeds_one)  { subject.arch_embeds_one = ArchEmbedsOne.new    }
+    let!(:arch_embeds_many) { 2.times.map { subject.arch_embeds_many.build } }
 
     let!(:norm_has_one)     { subject.norm_has_one = NormHasOne.create       }
     let!(:norm_has_many)    { 2.times.map { subject.norm_has_many.create }   }
@@ -748,27 +749,27 @@ describe Mongoid::Paranoia do
     let!(:norm_embeds_many) { 2.times.map { subject.norm_embeds_many.build } }
 
     let(:prepare) do
-      subject.destroy
+      subject.archive
       subject.restore
     end
 
-    context "restores paranoid associations" do
+    context "restores archivable associations" do
       before { prepare }
 
-      it { expect{ subject.restore_relations}.to change{ ParaHasOne.count    }.by(1) }
-      it { expect{ subject.restore_relations}.to change{ ParaHasMany.count   }.by(2) }
-      it { expect{ subject.restore_relations}.to change{ ParaHabtm.count     }.by(3) }
-      it { expect{ subject.restore_relations}.to change{ ParaBelongsTo.count }.by(1) }
+      it { expect { subject.restore_relations }.to change { ArchHasOne.count    }.by(1) }
+      it { expect { subject.restore_relations }.to change { ArchHasMany.count   }.by(2) }
+      it { expect { subject.restore_relations }.to change { ArchHabtm.count     }.by(3) }
+      it { expect { subject.restore_relations }.to change { ArchBelongsTo.count }.by(1) }
     end
 
-    context "does not affect embedded paranoid documents" do
+    context "does not affect embedded archivable documents" do
       before { prepare }
 
-      it { expect{ subject.restore_relations}.to_not change{ subject.para_embeds_one } }
-      it { expect{ subject.restore_relations}.to_not change{ subject.para_embeds_many.count } }
+      it { expect{ subject.restore_relations}.to_not change{ subject.arch_embeds_one } }
+      it { expect{ subject.restore_relations}.to_not change{ subject.arch_embeds_many.count } }
     end
 
-    context "does not affect non-paranoid documents" do
+    context "does not affect non-archivable documents" do
       before { prepare }
 
       it { expect{ subject.restore_relations}.to_not change{ NormHasOne.count    } }
@@ -781,47 +782,47 @@ describe Mongoid::Paranoia do
 
     context "recursion" do
 
-      let!(:para_habtm_norm_has_one)  { subject.para_habtm.first.norm_has_one = NormHasOne.create  } # not restored
-      let!(:para_habtm_para_has_one)  { subject.para_habtm.first.para_has_one = ParaHasOne.create  } # restored
-      let!(:para_habtm_norm_has_many) { 2.times.map { subject.para_habtm.first.norm_has_many  = NormHasMany.create } } # not restored
-      let!(:para_habtm_para_has_many) { 3.times.map { subject.para_habtm.second.para_has_many = ParaHasMany.create } } # restored
+      let!(:arch_habtm_norm_has_one)  { subject.arch_habtm.first.norm_has_one = NormHasOne.create  } # not restored
+      let!(:arch_habtm_arch_has_one)  { subject.arch_habtm.first.arch_has_one = ArchHasOne.create  } # restored
+      let!(:arch_habtm_norm_has_many) { 2.times.map { subject.arch_habtm.first.norm_has_many  = NormHasMany.create } } # not restored
+      let!(:arch_habtm_arch_has_many) { 3.times.map { subject.arch_habtm.second.arch_has_many = ArchHasMany.create } } # restored
 
       # Untestable due to infinite recursion condition in #destroy
-      # let!(:para_habtm_norm_habtm)    { 3.times.map { subject.para_habtm.second.norm_habtm.create } } # not restored
-      # let!(:para_habtm_recursive)     { 2.times.map { subject.para_habtm.first.recursive.create }   } # restored
+      # let!(:arch_habtm_norm_habtm)    { 3.times.map { subject.arch_habtm.second.norm_habtm.create } } # not restored
+      # let!(:arch_habtm_recursive)     { 2.times.map { subject.arch_habtm.first.recursive.create }   } # restored
 
       before do
         subject.destroy
         subject.restore
       end
 
-      it { expect{ subject.restore_relations}.to change { ParaHasOne.count  }.by(2) }
-      it { expect{ subject.restore_relations}.to change { ParaHasMany.count }.by(3) }
+      it { expect { subject.restore_relations}.to change { ArchHasOne.count  }.by(2) }
+      it { expect { subject.restore_relations}.to change { ArchHasMany.count }.by(3) }
 
       # Untestable due to infinite recursion condition in #destroy
-      # it { expect{ ParaHabtm.unscoped.each(&:restore)}.to change { ParaHabtm.count }.by(5) }
+      # it { expect{ ArchHabtm.unscoped.each(&:restore)}.to change { ArchHabtm.count }.by(5) }
 
-      it { expect{ subject.restore_relations}.to_not change { NormHasOne.count  } }
-      it { expect{ subject.restore_relations}.to_not change { NormHasMany.count } }
-      it { expect{ subject.restore_relations}.to_not change { NormHabtm.count   } }
+      it { expect { subject.restore_relations }.to_not change { NormHasOne.count  } }
+      it { expect { subject.restore_relations }.to_not change { NormHasMany.count } }
+      it { expect { subject.restore_relations }.to_not change { NormHabtm.count   } }
     end
   end
 
   describe ".scoped" do
 
     let(:scoped) do
-      ParanoidPost.scoped
+      ArchivablePost.scoped
     end
 
     it "returns a scoped criteria" do
-      expect(scoped.selector).to eq({ "deleted_at" => nil })
+      expect(scoped.selector).to eq({})
     end
   end
 
   describe "#set" do
 
     let!(:post) do
-      ParanoidPost.create
+      ArchivablePost.create
     end
 
     let(:time) do
@@ -829,18 +830,18 @@ describe Mongoid::Paranoia do
     end
 
     let!(:set) do
-      post.set(:deleted_at => time)
+      post.set(:archived_at => time)
     end
 
     it "persists the change" do
-      expect(post.reload.deleted_at).to be_within(1).of(time)
+      expect(post.reload.archived_at).to be_within(1).of(time)
     end
   end
 
   describe ".unscoped" do
 
     let(:unscoped) do
-      ParanoidPost.unscoped
+      ArchivablePost.unscoped
     end
 
     it "returns an unscoped criteria" do
@@ -851,7 +852,7 @@ describe Mongoid::Paranoia do
   describe "#to_param" do
 
     let(:post) do
-      ParanoidPost.new(title: "testing")
+      ArchivablePost.new(title: "testing")
     end
 
     context "when the document is new" do
@@ -861,7 +862,7 @@ describe Mongoid::Paranoia do
       end
     end
 
-    context "when the document is not deleted" do
+    context "when the document is not archived" do
 
       before do
         post.save
@@ -872,7 +873,7 @@ describe Mongoid::Paranoia do
       end
     end
 
-    context "when the document is deleted" do
+    context "when the document is archived" do
 
       before do
         post.save

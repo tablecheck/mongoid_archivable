@@ -1,5 +1,6 @@
 source 'https://rubygems.org'
-gemspec name: 'mongoid_paranoia'
+
+gemspec
 
 gem 'mongoid', '~> 7.0'
 
