@@ -1,9 +1,10 @@
+# frozen_string_literal: true
+
 require 'mongoid/archivable/configuration'
 require 'active_support'
 require 'active_support/deprecation'
 
 module Mongoid
-
   # Include this module to get archivable root level documents.
   # This will add a archived_at field to the +Document+, managed automatically.
   # Potentially incompatible with unique indices. (if collisions with archived items)
@@ -18,25 +19,23 @@ module Mongoid
     extend ActiveSupport::Concern
 
     class << self
-      attr_accessor :configuration
-    end
+      def configuration
+        @configuration ||= Configuration.new
+      end
 
-    def self.configuration
-      @configuration ||= Configuration.new
-    end
+      def reset
+        @configuration = Configuration.new
+      end
 
-    def self.reset
-      @configuration = Configuration.new
-    end
-
-    # Allow the archivable +Document+ to use an alternate field name for archived_at.
-    #
-    # @example
-    #   Mongoid::Archivable.configure do |c|
-    #     c.archivable_field = :myFieldName
-    #   end
-    def self.configure
-      yield(configuration)
+      # Allow the archivable +Document+ to use an alternate field name for archived_at.
+      #
+      # @example
+      #   Mongoid::Archivable.configure do |c|
+      #     c.archivable_field = :myFieldName
+      #   end
+      def configure
+        yield(configuration)
+      end
     end
 
     # class_methods do
@@ -96,19 +95,18 @@ module Mongoid
 
       def restore_without_callbacks(options = {})
         _archivable_update('$unset' => { archivable_field => true })
-        attributes.delete('archived_at') # todo: does this need database field name
+        attributes.delete('archived_at') # TODO: does this need database field name
         restore_relations if options[:recursive]
         true
       end
 
       def restore_relations
-        self.relations.each_pair do |name, association|
+        relations.each_pair do |name, association|
           next unless association.dependent == :destroy
-          relation = self.send(name)
-          if relation.try(:archivable?)
-            Array.wrap(relation).each do |doc|
-              doc.restore(recursive: true)
-            end
+          relation = send(name)
+          next unless relation.try(:archivable?)
+          Array.wrap(relation).each do |doc|
+            doc.restore(recursive: true)
           end
         end
       end
@@ -167,13 +165,12 @@ module Mongoid
 
       def _dependent_archive!(association)
         relation = send(association.name)
-        if relation.try(:archivable?)
-          if relation.is_a?(Enumerable)
-            relation.entries
-            relation.each(&:archive)
-          else
-            relation.archive
-          end
+        return unless relation.try(:archivable?)
+        if relation.is_a?(Enumerable)
+          relation.entries
+          relation.each(&:archive)
+        else
+          relation.archive
         end
       end
     end
