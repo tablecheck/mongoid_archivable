@@ -3,5 +3,5 @@ class Author
 
   field :name, type: String
 
-  belongs_to :post, class_name: "ArchivablePost"
+  belongs_to :post, class_name: 'ArchivablePost'
 end

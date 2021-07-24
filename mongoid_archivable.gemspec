@@ -19,5 +19,6 @@ Gem::Specification.new do |gem|
 
   gem.add_runtime_dependency 'mongoid', '~> 7.0'
 
+  gem.add_development_dependency 'rspec'
   gem.add_development_dependency 'rubocop', '>= 1.8.1'
 end

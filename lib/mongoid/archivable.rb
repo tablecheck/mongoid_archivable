@@ -1,8 +1,10 @@
 # frozen_string_literal: true
 
-require 'mongoid/archivable/configuration'
 require 'active_support'
-require 'active_support/deprecation'
+require 'mongoid/archivable/version'
+require 'mongoid/archivable/configuration'
+require 'mongoid/archivable/depending'
+require 'mongoid/archivable/protected'
 
 module Mongoid
   # Include this module to get archivable root level documents.
@@ -15,7 +17,6 @@ module Mongoid
   #     include Mongoid::Archivable
   #   end
   module Archivable
-    include Mongoid::Persistable::Deletable
     extend ActiveSupport::Concern
 
     class << self
@@ -27,7 +28,7 @@ module Mongoid
         @configuration = Configuration.new
       end
 
-      # Allow the archivable +Document+ to use an alternate field name for archived_at.
+      # Set an alternate field name for archived_at.
       #
       # @example
       #   Mongoid::Archivable.configure do |c|
@@ -45,6 +46,8 @@ module Mongoid
     # end
 
     included do
+      include Mongoid::Archivable::Protected
+
       class_attribute :archivable
       self.archivable = true
 
@@ -56,26 +59,31 @@ module Mongoid
       define_model_callbacks :archive
       define_model_callbacks :restore
 
-      def archive(_options = {})
-        run_callbacks(:archive) { archive_without_callbacks }
+      def archive(options = {})
+        raise Errors::ReadonlyDocument.new(self.class) if readonly?
+        run_callbacks(:archive) do
+          if catch(:abort) { apply_archive_dependencies! }
+            archive_without_callbacks(options || {})
+          else
+            false
+          end
+        end
       end
 
       def archive_without_callbacks(_options = {})
-        return false unless catch(:abort) { apply_archive_dependencies! }
+        raise Errors::ReadonlyDocument.new(self.class) if readonly?
         now = Time.now
         self.archived_at = now
         _archivable_update('$set' => { archivable_field => now })
         true
       end
 
-      # Determines if this document is destroyed.
+      # Determines if this document is archived.
       #
       # @example Is the document destroyed?
       #   person.destroyed?
       #
       # @return [ true, false ] If the document is destroyed.
-      #
-      # @since 1.0.0
       def archived?
         !!archived_at
       end
@@ -88,7 +96,7 @@ module Mongoid
       #
       # For restoring associated documents use :recursive => true
       # @example Restore the associated documents from archived state.
-      #   document.restore(:recursive => true)
+      #   document.restore(recursive: true)
       def restore(options = {})
         run_callbacks(:restore) { restore_without_callbacks(options) }
       end
@@ -102,29 +110,14 @@ module Mongoid
 
       def restore_relations
         relations.each_pair do |name, association|
-          next unless association.dependent == :destroy
+          next unless association.dependent.in?(%i[archive archive_without_callbacks])
+          next unless _association_archivable?(association)
           relation = send(name)
-          next unless relation.try(:archivable?)
+          next unless relation
           Array.wrap(relation).each do |doc|
             doc.restore(recursive: true)
           end
         end
-      end
-
-      alias_method :delete!, :delete
-
-      def delete
-        Mongoid.logger.warn 'DEPRECATED: #delete called instead of #archive_without_callbacks'
-        archive_without_callbacks
-      end
-
-      def destroy
-        Mongoid.logger.warn 'DEPRECATED: #destroy called instead of #archive'
-        archive
-      end
-
-      def destroy!
-        run_callbacks(:destroy) { delete! }
       end
 
       private
@@ -154,24 +147,6 @@ module Mongoid
       #
       def _archivable_update(value)
         archivable_collection.find(atomic_selector).update_one(value)
-      end
-
-      def apply_archive_dependencies!
-        self.class._all_dependents.each do |association|
-          next unless association.try(:dependent) == :destroy
-          _dependent_archive!(association)
-        end
-      end
-
-      def _dependent_archive!(association)
-        relation = send(association.name)
-        return unless relation.try(:archivable?)
-        if relation.is_a?(Enumerable)
-          relation.entries
-          relation.each(&:archive)
-        else
-          relation.archive
-        end
       end
     end
   end

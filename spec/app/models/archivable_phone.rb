@@ -2,21 +2,21 @@ class ArchivablePhone
   include Mongoid::Document
   include Mongoid::Archivable
 
-  attr_accessor :after_destroy_called, :before_destroy_called
+  attr_accessor :after_archive_called, :before_archive_called
 
   field :number, type: String
 
   embedded_in :person
 
-  before_destroy :before_destroy_stub, :halt_me
-  after_destroy :after_destroy_stub
+  before_archive :before_archive_stub, :halt_me
+  after_archive :after_archive_stub
 
-  def before_destroy_stub
-    self.before_destroy_called = true
+  def before_archive_stub
+    self.before_archive_called = true
   end
 
-  def after_destroy_stub
-    self.after_destroy_called = true
+  def after_archive_stub
+    self.after_archive_called = true
   end
 
   def halt_me
