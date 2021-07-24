@@ -1,16 +1,20 @@
-# Archivable Documents for Mongoid
+# Mongoid::Archivable
+
 [![Build Status](https://travis-ci.org/tablecheck/mongoid_archivable.svg?branch=master)](https://travis-ci.org/simi/mongoid_archivable) [![Gem Version](https://img.shields.io/gem/v/mongoid_archivable.svg)](https://rubygems.org/gems/mongoid_archivable) [![Gitter chat](https://badges.gitter.im/tablecheck/mongoid_archivable.svg)](https://gitter.im/tablecheck/mongoid_archivable)
 
-`Mongoid::Archivable` enables archiving (soft delete) of Mongoid documents. Instead of being removed from the database, archived docs are flagged with an `archived_at` timestamp.
-
-This gem is forked from [mongoid_paranoia](https://github.com/simi/mongoid_paranoia), but with the following key differences:
-
-* The flag named is `archived_at` rather than `deleted_at`. The name `deleted_at` is confusing with respect to hard deletion.
-* This gem does **not** set a default scope. By default, queries return both unarchived (live) and archived documents.
-* Requires calling the `archivable` macro function in the model definition to enable. Model-specific configuration is possible.
-* Monkey patches and hackery are removed.
+`Mongoid::Archivable` enables archiving (soft delete) of Mongoid documents. Instead of being removed from the database, archived docs are flagged with an `archived_at` timestamp. This gem is forked from [mongoid_paranoia](https://github.com/simi/mongoid_paranoia).
 
 **Caution:** This repo/gem `mongoid_archivable` (underscored) is different than [mongoid-archivable](https://github.com/Sign2Pay/mongoid-archivable) (hyphenated).
+
+#### Differences with Mongoid::Paranoia
+
+Note the following key design differences:
+
+* The flag named is `archived_at` rather than `deleted_at`. The name `deleted_at` is confusing with respect to hard deletion.
+* This gem does **not** set a default scope on root (non-embedded) docs. Use the `.unarchived` (live) and `.archived` query scopes as needed.
+* Mongoid::Paranoia overrides the `delete` and `destroy` methods with new "soft-delete" behavior. This gem leaves `delete` and `destroy` intact.
+* Requires calling the `archivable` macro function in the model definition to enable. Model-specific configuration is possible.
+* Monkey patches and hackery are removed.
 
 ## Installation
 
@@ -27,6 +31,7 @@ class Person
   include Mongoid::Document
   include Mongoid::Archivable
 
+  # TODO
   archivable
 end
 
@@ -36,40 +41,34 @@ person.destroy  # Sets the archived_at field to the current time, firing callbac
 person.destroy! # Permanently deletes the document, firing callbacks.
 
 person.archive  # Sets the archived_at field to the current time, firing callbacks.
+
+# TODO
 person.archive(callbacks: false) # Sets the archived_at field to the current time, ignoring callbacks.
-person.restore  # Brings the "archived" document back to life.
+
+person.restore # Brings the "archived" document back to life.
+
 person.restore(recursive: true) # Brings "archived" associated documents back to life recursively
 ```
 
 #### Querying
 
-By default, all documents (both archived and non-archived) at any time by using the `all` class method:
-
 ```ruby
 Person.all # Returns all documents, both archived and non-archived
-```
 
-The documents that have been "flagged" as archived can be accessed at any time by calling the archived class method on the class.
-
-```ruby
 Person.unarchived # Returns documents that have been "flagged" as archived.
-```
 
-The documents that have been "flagged" as archived can be accessed at any time by calling the archived class method on the class.
-
-```ruby
 Person.archived # Returns documents that have been "flagged" as archived.
 ```
 
-You can also configure the archivable field naming on a global basis. Within the context of a Rails app this is done via an initializer.
-
 #### Configuration
+
+You can configure the archivable field naming on a global basis. Within the context of a Rails app this is done via an initializer.
 
 ```ruby
 # config/initializers/mongoid_archivable.rb
 
 Mongoid::Archivable.configure do |c|
-  c.archivable_field = :myFieldName
+  c.archivable_field = :my_field_name
 end
 ```
 
@@ -99,13 +98,14 @@ on the value of `archived_at`, so please refer to the
 
 ### Callbacks
 
-#### Restore
+Archivable documents have the following new callbacks:
 
-`before_restore`, `after_restore` and `around_restore` callbacks are added to your model. They work similarly to the `before_destroy`, `after_destroy` and `around_destroy` callbacks.
-
-#### Remove
-
-`before_remove`, `after_remove` and `around_remove` are added to your model. They are called when record is archived permanently .
+* `before_archive`
+* `after_archive`
+* `around_archive`
+* `before_restore`
+* `after_restore`
+* `around_restore`
 
 #### Example
 
@@ -114,25 +114,13 @@ class User
   include Mongoid::Document
   include Mongoid::Archivable
 
+  before_archive :before_archive_action
+  after_archive :after_archive_action
+  around_archive :around_archive_action
+
   before_restore :before_restore_action
-  after_restore  :after_restore_action
+  after_restore :after_restore_action
   around_restore :around_restore_action
-
-  private
-
-  def before_restore_action
-    puts "BEFORE"
-  end
-
-  def after_restore_action
-    puts "AFTER"
-  end
-
-  def around_restore_action
-    puts "AROUND - BEFORE"
-    yield # restoring
-    puts "AROUND - AFTER"
-  end
 end
 ```
 
