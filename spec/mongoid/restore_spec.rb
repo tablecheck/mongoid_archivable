@@ -11,7 +11,7 @@ RSpec.describe 'Mongoid::Archivable#restore' do
       end
 
       before do
-        post.delete
+        post.archive
         post.restore
       end
 
@@ -55,7 +55,7 @@ RSpec.describe 'Mongoid::Archivable#restore' do
       end
 
       before do
-        phone.delete
+        phone.archive
         phone.restore
       end
 

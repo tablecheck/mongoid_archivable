@@ -7,6 +7,7 @@ require 'mongoid/archivable/depending'
 require 'mongoid/archivable/protected'
 
 module Mongoid
+
   # Include this module to get archivable root level documents.
   # This will add a archived_at field to the +Document+, managed automatically.
   # Potentially incompatible with unique indices. (if collisions with archived items)
@@ -46,9 +47,6 @@ module Mongoid
     # end
 
     included do
-      include Mongoid::Archivable::Protected
-      # include Mongoid::Persistable::Deletable
-
       class_attribute :archivable
       self.archivable = true
 
