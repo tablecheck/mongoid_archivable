@@ -4,13 +4,13 @@ $LOAD_PATH.push File.expand_path('lib', __dir__)
 require 'mongoid/archivable/version'
 
 Gem::Specification.new do |gem|
-  gem.name          = 'mongoid_archivable'
+  gem.name          = 'mongoid_archival'
   gem.version       = Mongoid::Archivable::VERSION
   gem.authors       = ['Durran Jordan', 'Josef Šimánek', 'Johnny Shields']
   gem.email         = ['durran@gmail.com', 'retro@ballgag.cz', 'info@tablecheck.com']
   gem.description   = 'Enables archiving (soft delete) of Mongoid documents.'
   gem.summary       = 'Archivable documents'
-  gem.homepage      = 'https://github.com/tablecheck/mongoid_archivable'
+  gem.homepage      = 'https://github.com/tablecheck/mongoid_archival'
   gem.license       = 'MIT'
 
   gem.files         = Dir.glob('lib/**/*') + %w[LICENSE README.md]

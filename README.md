@@ -1,7 +1,7 @@
-# Mongoid::Archivable
+# Mongoid::Archivable (mongoid_archival)
 
-[![Build Status](https://github.com/tablecheck/mongoid_archivable/actions/workflows/test.yml/badge.svg?query=branch%3Amaster)](https://github.com/tablecheck/mongoid_archivable/actions/workflows/test.yml?query=branch%3Amaster)
-[![Gem Version](https://img.shields.io/gem/v/mongoid_archivable.svg)](https://rubygems.org/gems/mongoid_archivable)
+[![Build Status](https://github.com/tablecheck/mongoid_archival/actions/workflows/test.yml/badge.svg?query=branch%3Amaster)](https://github.com/tablecheck/mongoid_archival/actions/workflows/test.yml?query=branch%3Amaster)
+[![Gem Version](https://img.shields.io/gem/v/mongoid_archival.svg)](https://rubygems.org/gems/mongoid_archival)
 
 `Mongoid::Archivable` enables archiving (soft delete) of Mongoid documents.
 Instead of being removed from the database, archived docs are flagged with an `archived_at` timestamp.
@@ -15,10 +15,11 @@ and write tests in your own project.
 
 #### Disambiguation
 
+* This gem is different than [mongoid-archivable](https://github.com/Sign2Pay/mongoid-archivable),
+which moves documents to a separate "archive" database/collection. Cannot be used concurrently with
+this gem as both use the `Mongoid::Archivable` namespace.
 * This gem is forked from [mongoid_paranoia](https://github.com/simi/mongoid_paranoia).
-See section below for key differences.
-* This gem is different than [mongoid-archivable](https://github.com/Sign2Pay/mongoid-archivable)
-(hyphenated), which moves documents to a separate "archive" database/collection.
+Can be used concurrently with this gem. See section below for key differences.
 
 #### TODO
 
@@ -35,7 +36,7 @@ See section below for key differences.
 In your application's Gemfile:
 
 ```ruby
-gem 'mongoid_archivable'
+gem 'mongoid_archival'
 ```
 
 #### Adding to Model Class
@@ -45,7 +46,7 @@ class Person
   include Mongoid::Document
   include Mongoid::Archivable
 
-  # TODO: archivable
+  # TODO: archivable macro
 end
 ```
 
@@ -222,7 +223,7 @@ Mongoid::Paranoia relies on `.unscoped`
 
 #### Migration Checklist
 
-* [ ] Add `mongoid_archivable` to your gemspec **after** `mongoid_paranoia`.
+* [ ] Add `mongoid_archival` to your gemspec **after** `mongoid_paranoia`.
 You may use the two gems together in your project,
 but should include only one of `Mongoid::Archivable` or `Mongoid::Paranoia` into each model class.
 In this manner, you can migrate each model one-by-one.
