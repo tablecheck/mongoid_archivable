@@ -11,14 +11,12 @@ module Mongoid
         alias :delete! :delete
 
         def delete
-          Mongoid.logger.warn 'DEPRECATED: #delete called instead of #archive_without_callbacks'
-          archive_without_callbacks
+          raise '#delete not permitted. Use #archive_without_callbacks or #delete! instead.'
         end
         alias :remove :delete
 
         def destroy
-          Mongoid.logger.warn 'DEPRECATED: #destroy called instead of #archive'
-          archive
+          raise '#destroy not permitted. Use #archive or #destroy! instead.'
         end
 
         def destroy!(options = {})

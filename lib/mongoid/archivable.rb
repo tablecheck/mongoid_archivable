@@ -115,7 +115,7 @@ module Mongoid
 
       def restore_relations
         relations.each_pair do |name, association|
-          next unless association.dependent.in?(%i[archive archive_without_callbacks])
+          next unless association.dependent.in?(%i[archive archive_all])
           next unless _association_archivable?(association)
           relation = send(name)
           next unless relation
