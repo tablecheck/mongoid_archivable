@@ -33,7 +33,7 @@ RSpec.describe 'Mongoid::Archivable uniqueness validator' do
         context 'when the field is unique for non archived docs' do
 
           before do
-            post.delete!
+            post.delete
           end
 
           let(:new_post) do
@@ -49,7 +49,7 @@ RSpec.describe 'Mongoid::Archivable uniqueness validator' do
 
           before do
             post = ArchivablePost.create(title: 'test')
-            post.delete
+            post.archive
           end
 
           let(:new_post) do

@@ -47,6 +47,7 @@ module Mongoid
 
     included do
       include Mongoid::Archivable::Protected
+      # include Mongoid::Persistable::Deletable
 
       class_attribute :archivable
       self.archivable = true

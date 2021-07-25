@@ -1,22 +1,22 @@
 class NormBase
   include Mongoid::Document
 
-  has_one :norm_has_one, dependent: :archive
+  has_one :norm_has_one, dependent: :destroy
   has_one :arch_has_one, dependent: :archive
 
-  has_many :norm_has_many, dependent: :archive
+  has_many :norm_has_many, dependent: :destroy
   has_many :arch_has_many, dependent: :archive
 
-  has_many :norm_has_many_poly, dependent: :archive
+  has_many :norm_has_many_poly, dependent: :destroy
   has_many :arch_has_many_poly, dependent: :archive
 
-  belongs_to :norm_belongs_to_one, dependent: :archive
+  belongs_to :norm_belongs_to_one, dependent: :destroy
   belongs_to :arch_belongs_to_one, dependent: :archive
 
-  belongs_to :norm_belongs_to, dependent: :archive
+  belongs_to :norm_belongs_to, dependent: :destroy
   belongs_to :arch_belongs_to, dependent: :archive
 
-  has_and_belongs_to_many :norm_habtm, dependent: :archive
+  has_and_belongs_to_many :norm_habtm, dependent: :destroy
   has_and_belongs_to_many :arch_habtm, dependent: :archive
 
   embeds_one :norm_embeds_one
@@ -33,22 +33,22 @@ class ArchBase
   include Mongoid::Document
   include Mongoid::Archivable
 
-  has_one :norm_has_one, dependent: :archive
+  has_one :norm_has_one, dependent: :destroy
   has_one :arch_has_one, dependent: :archive
 
-  has_many :norm_has_many, dependent: :archive
+  has_many :norm_has_many, dependent: :destroy
   has_many :arch_has_many, dependent: :archive
 
-  has_many :norm_has_many_poly, dependent: :archive
+  has_many :norm_has_many_poly, dependent: :destroy
   has_many :arch_has_many_poly, dependent: :archive
 
-  belongs_to :norm_belongs_to_one, dependent: :archive
+  belongs_to :norm_belongs_to_one, dependent: :destroy
   belongs_to :arch_belongs_to_one, dependent: :archive
 
-  belongs_to :norm_belongs_to, dependent: :archive
+  belongs_to :norm_belongs_to, dependent: :destroy
   belongs_to :arch_belongs_to, dependent: :archive
 
-  has_and_belongs_to_many :norm_habtm, dependent: :archive
+  has_and_belongs_to_many :norm_habtm, dependent: :destroy
   has_and_belongs_to_many :arch_habtm, dependent: :archive
 
   embeds_one :norm_embeds_one
@@ -67,11 +67,11 @@ class NormHasOne
   belongs_to :norm_base
   belongs_to :arch_base
 
-  has_one :norm_belongs_to, dependent: :archive
+  has_one :norm_belongs_to, dependent: :destroy
   has_one :arch_belongs_to, dependent: :archive
 
-  has_one :norm_habtm, dependent: :archive
-  has_one :norm_habtm, dependent: :archive
+  has_one :norm_habtm, dependent: :destroy
+  has_one :norm_habtm, dependent: :destroy
 end
 
 class NormHasMany
@@ -80,11 +80,11 @@ class NormHasMany
   belongs_to :norm_base
   belongs_to :arch_base
 
-  has_many :norm_belongs_to, dependent: :archive
+  has_many :norm_belongs_to, dependent: :destroy
   has_many :arch_belongs_to, dependent: :archive
 
-  has_many :norm_habtm, dependent: :archive
-  has_many :norm_habtm, dependent: :archive
+  has_many :norm_habtm, dependent: :destroy
+  has_many :norm_habtm, dependent: :destroy
 end
 
 class NormHasManyPoly
@@ -106,10 +106,10 @@ class NormBelongsTo
   has_many :norm_base
   has_many :arch_base
 
-  belongs_to :norm_has_one, dependent: :archive
+  belongs_to :norm_has_one, dependent: :destroy
   belongs_to :arch_has_one, dependent: :archive
 
-  belongs_to :norm_has_many, dependent: :archive
+  belongs_to :norm_has_many, dependent: :destroy
   belongs_to :arch_has_many, dependent: :archive
 end
 
@@ -119,10 +119,10 @@ class NormHabtm
   has_and_belongs_to_many :norm_base
   has_and_belongs_to_many :arch_base
 
-  belongs_to :norm_has_one, dependent: :archive
+  belongs_to :norm_has_one, dependent: :destroy
   belongs_to :arch_has_one, dependent: :archive
 
-  belongs_to :norm_has_many, dependent: :archive
+  belongs_to :norm_has_many, dependent: :destroy
   belongs_to :arch_has_many, dependent: :archive
 
   has_and_belongs_to_many :recursive, class_name: 'NormHabtm', inverse_of: :recursive, dependent: :archive
@@ -156,11 +156,11 @@ class ArchHasOne
   belongs_to :norm_base
   belongs_to :arch_base
 
-  has_one :norm_belongs_to, dependent: :archive
+  has_one :norm_belongs_to, dependent: :destroy
   has_one :arch_belongs_to, dependent: :archive
 
-  has_one :norm_habtm, dependent: :archive
-  has_one :norm_habtm, dependent: :archive
+  has_one :norm_habtm, dependent: :destroy
+  has_one :norm_habtm, dependent: :destroy
 end
 
 class ArchHasMany
@@ -170,11 +170,11 @@ class ArchHasMany
   belongs_to :norm_base
   belongs_to :arch_base
 
-  has_many :norm_belongs_to, dependent: :archive
+  has_many :norm_belongs_to, dependent: :destroy
   has_many :arch_belongs_to, dependent: :archive
 
-  has_many :norm_habtm, dependent: :archive
-  has_many :norm_habtm, dependent: :archive
+  has_many :norm_habtm, dependent: :destroy
+  has_many :norm_habtm, dependent: :destroy
 end
 
 class ArchHasManyPoly
@@ -199,10 +199,10 @@ class ArchBelongsTo
   has_many :norm_base
   has_many :arch_base
 
-  belongs_to :norm_has_one, dependent: :archive
+  belongs_to :norm_has_one, dependent: :destroy
   belongs_to :arch_has_one, dependent: :archive
 
-  belongs_to :norm_has_many, dependent: :archive
+  belongs_to :norm_has_many, dependent: :destroy
   belongs_to :arch_has_many, dependent: :archive
 end
 
@@ -213,13 +213,13 @@ class ArchHabtm
   has_and_belongs_to_many :norm_base
   has_and_belongs_to_many :arch_base
 
-  belongs_to :norm_has_one, dependent: :archive
+  belongs_to :norm_has_one, dependent: :destroy
   belongs_to :arch_has_one, dependent: :archive
 
-  belongs_to :norm_has_many, dependent: :archive
+  belongs_to :norm_has_many, dependent: :destroy
   belongs_to :arch_has_many, dependent: :archive
 
-  has_and_belongs_to_many :norm_habtm, dependent: :archive
+  has_and_belongs_to_many :norm_habtm, dependent: :destroy
   has_and_belongs_to_many :recursive, class_name: 'ArchHabtm', inverse_of: :recursive, dependent: :archive
 end
 

@@ -1,18 +1,16 @@
 # Mongoid::Archivable
 
-[![Build Status](https://travis-ci.org/tablecheck/mongoid_archivable.svg?branch=master)](https://travis-ci.org/simi/mongoid_archivable) [![Gem Version](https://img.shields.io/gem/v/mongoid_archivable.svg)](https://rubygems.org/gems/mongoid_archivable) [![Gitter chat](https://badges.gitter.im/tablecheck/mongoid_archivable.svg)](https://gitter.im/tablecheck/mongoid_archivable)
+[![Build Status](https://travis-ci.org/tablecheck/mongoid_archivable.svg?branch=master)](https://travis-ci.org/simi/mongoid_archivable) [![Gem Version](https://img.shields.io/gem/v/mongoid_archivable.svg)](https://rubygems.org/gems/mongoid_archivable)
 
 `Mongoid::Archivable` enables archiving (soft delete) of Mongoid documents. Instead of being removed from the database, archived docs are flagged with an `archived_at` timestamp. This gem is forked from [mongoid_paranoia](https://github.com/simi/mongoid_paranoia).
 
-**Caution:** This repo/gem `mongoid_archivable` (underscored) is different than [mongoid-archivable](https://github.com/Sign2Pay/mongoid-archivable) (hyphenated).
+Note that this gem `mongoid_archivable` (underscored) is different than [mongoid-archivable](https://github.com/Sign2Pay/mongoid-archivable) (hyphenated).
 
 #### Differences with Mongoid::Paranoia
 
-Note the following key design differences:
-
 * The flag named is `archived_at` rather than `deleted_at`. The name `deleted_at` is confusing with respect to hard deletion.
 * This gem does **not** set a default scope on root (non-embedded) docs. Use the `.unarchived` (live) and `.archived` query scopes as needed.
-* Mongoid::Paranoia overrides the `delete` and `destroy` methods with new "soft-delete" behavior. This gem leaves `delete` and `destroy` intact.
+* Mongoid::Paranoia overrides the `delete` and `destroy` methods with new "soft-delete" behavior. This gem leaves `delete` and `destroy` as-is.
 * Requires calling the `archivable` macro function in the model definition to enable. Model-specific configuration is possible.
 * Monkey patches and hackery are removed.
 
@@ -35,11 +33,6 @@ class Person
   archivable
 end
 
-person.delete   # Sets the archived_at field to the current time, ignoring callbacks.
-person.delete!  # Permanently deletes the document, ignoring callbacks.
-person.destroy  # Sets the archived_at field to the current time, firing callbacks.
-person.destroy! # Permanently deletes the document, firing callbacks.
-
 person.archive  # Sets the archived_at field to the current time, firing callbacks.
 
 # TODO
@@ -48,16 +41,6 @@ person.archive(callbacks: false) # Sets the archived_at field to the current tim
 person.restore # Brings the "archived" document back to life.
 
 person.restore(recursive: true) # Brings "archived" associated documents back to life recursively
-```
-
-#### Querying
-
-```ruby
-Person.all # Returns all documents, both archived and non-archived
-
-Person.unarchived # Returns documents that have been "flagged" as archived.
-
-Person.archived # Returns documents that have been "flagged" as archived.
 ```
 
 #### Configuration
@@ -71,6 +54,71 @@ Mongoid::Archivable.configure do |c|
   c.archivable_field = :my_field_name
 end
 ```
+
+#### Querying
+
+```ruby
+Person.all # Returns all documents, both archived and non-archived
+
+Person.unarchived # Returns documents that have been "flagged" as archived.
+
+Person.archived # Returns documents that have been "flagged" as archived.
+```
+
+#### Callbacks
+
+Archivable documents have the following new callbacks. Note that these are **not** fired on `#destroy`.
+
+* `before_archive`
+* `after_archive`
+* `around_archive`
+* `before_restore`
+* `after_restore`
+* `around_restore`
+
+```ruby
+class User
+  include Mongoid::Document
+  include Mongoid::Archivable
+
+  before_archive :before_archive_action
+  after_archive :after_archive_action
+  around_archive :around_archive_action
+
+  before_restore :before_restore_action
+  after_restore :after_restore_action
+  around_restore :around_restore_action
+
+  def before_archive_action
+    throw(:abort) if name == 'Pete'
+  end
+end
+```
+
+#### Relation Dependencies
+
+This gem add two new dependency handling strategies:
+
+* `:archive` - Invokes `#archive` and callbacks on each dependency, recursively
+including dependencies of dependencies.
+* `:archive_without_callbacks` - Calls `.set(archived_at: Time.now)` on the
+dependency scope. Much faster but does not support callbacks or dependency recursion.
+
+```
+class User
+  include Mongoid::Document
+  include Mongoid::Archivable
+
+  has_many :pokemons, dependent: :archive
+  belongs_to :gym, dependent: :archive_without_callbacks
+end
+```
+
+If the dependent model is not archivable, it will be ignored without any effect.
+
+In addition, dependency strategies `:nullify`, `:restrict_with_exception`,
+and `:restrict_with_error` will be applied when archiving documents.
+`:destroy` and `:delete_all` are intentionally ignored.
 
 ### Gotchas
 
@@ -96,39 +144,12 @@ Note that this may not give the best performance in all cases, e.g. when doing a
 on the value of `archived_at`, so please refer to the
 [MongoDB Indexes documentation](https://docs.mongodb.com/manual/indexes/).
 
-### Callbacks
-
-Archivable documents have the following new callbacks:
-
-* `before_archive`
-* `after_archive`
-* `around_archive`
-* `before_restore`
-* `after_restore`
-* `around_restore`
-
-#### Example
-
-```ruby
-class User
-  include Mongoid::Document
-  include Mongoid::Archivable
-
-  before_archive :before_archive_action
-  after_archive :after_archive_action
-  around_archive :around_archive_action
-
-  before_restore :before_restore_action
-  after_restore :after_restore_action
-  around_restore :around_restore_action
-end
-```
-
-## Migrating from Mongoid::Paranoia
+## Mongoid::Paranoia Migration Checklist
 
 1. Add `mongoid_archivable` to your gemspec **after** `mongoid_paranoia`
-2. Define your archived field name as `:deleted_at` for backwards compatibility.
+2. Configure your archived field name as `:deleted_at` for backwards compatibility.
 3. Add `.unarchived` to your queries as necessary. You can remove usages of `.unscoped`.
+4. In your relations, replace `dependent: :destroy` with `dependent: :archive`
 
 Note that it is possible to migrate each model individually.
 

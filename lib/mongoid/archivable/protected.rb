@@ -7,7 +7,6 @@ module Mongoid
 
       included do
         include Mongoid::Persistable::Deletable
-        extend ActiveSupport::Concern
 
         alias :delete! :delete
 

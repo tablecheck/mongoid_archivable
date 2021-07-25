@@ -9,7 +9,7 @@ module Mongoid
       def apply_archive_dependencies!
         self.class._all_dependents.each do |association|
           dependent = association.try(:dependent)
-          next unless dependent.in?(%i[archive archive_without_callbacks])
+          next if !dependent || dependent.in?(%i[delete_all destroy])
           send(:"_dependent_#{dependent}!", association)
         end
       end
@@ -17,7 +17,7 @@ module Mongoid
       private
 
       def _dependent_archive!(association)
-        return unless _association_archivable?(association)
+        return unless _warn_association_archivable?(association)
         relation = send(association.name)
         return unless relation
         if relation.is_a?(Enumerable)
@@ -29,10 +29,16 @@ module Mongoid
       end
 
       def _dependent_archive_without_callbacks!(association)
-        return unless _association_archivable?(association)
+        return unless _warn_association_archivable?(association)
         relation = send(association.name)
         return unless relation
         relation.set(archive_at: Time.zone.now)
+      end
+
+      def _warn_association_archivable?(association)
+        result = _association_archivable?(association)
+        Mongoid.logger.warn "Non-archivable association: #{association.name}" unless result
+        result
       end
 
       def _association_archivable?(association)

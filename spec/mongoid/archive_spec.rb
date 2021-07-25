@@ -79,7 +79,26 @@ RSpec.describe 'Mongoid::Archivable#archive' do
     #   end
     # end
 
-    context 'when the document has a dependent: :delete relation' do
+    context 'when the document has a dependent: :archive relation' do
+
+      let(:post) do
+        ArchivablePost.create(title: 'test')
+      end
+
+      let!(:fish) do
+        post.fish = Fish.create
+      end
+
+      before do
+        post.archive
+      end
+
+      it 'cascades the dependent option' do
+        expect(fish.reload.archived_at).to be_a(Time)
+      end
+    end
+
+    context 'when the document has a dependent: :destroy relation' do
 
       let(:post) do
         ArchivablePost.create(title: 'test')
@@ -93,8 +112,8 @@ RSpec.describe 'Mongoid::Archivable#archive' do
         post.archive
       end
 
-      it 'cascades the dependent option' do
-        expect(author.reload.archived_at).to be_a(Time)
+      it 'ignores dependent :destroy option' do
+        expect(author.reload).to be_a(Author)
       end
     end
 
@@ -158,7 +177,7 @@ RSpec.describe 'Mongoid::Archivable#archive' do
     #   end
     #
     #   before do
-    #     phone.delete
+    #     phone.archive_without_callbacks
     #   end
     #
     #   let(:raw) do
@@ -191,7 +210,7 @@ RSpec.describe 'Mongoid::Archivable#archive' do
       end
 
       before do
-        post.delete
+        post.archive_without_callbacks
       end
 
       it 'does not cascade the dependent option' do
@@ -213,7 +232,7 @@ RSpec.describe 'Mongoid::Archivable#archive' do
 
       before do
         begin
-          post.delete
+          post.archive_without_callbacks
         rescue Mongoid::Errors::DeleteRestriction
         end
       end
@@ -261,11 +280,11 @@ RSpec.describe 'Mongoid::Archivable#archive' do
       context 'when the document is hard deleted' do
 
         before do
-          phone.archive
+          phone.destroy!
         end
 
         it 'returns true' do
-          expect(phone).to be_archived
+          expect(phone).to be_destroyed
         end
       end
 
@@ -291,7 +310,7 @@ RSpec.describe 'Mongoid::Archivable#archive' do
         end
 
         before do
-          post.delete
+          post.archive
         end
 
         it 'does not cascades the dependent option' do

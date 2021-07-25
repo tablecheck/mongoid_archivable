@@ -5,4 +5,6 @@ class Fish
   def self.fresh
     where(fresh: true)
   end
+
+  belongs_to :post, class_name: 'ArchivablePost'
 end
