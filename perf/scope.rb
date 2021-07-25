@@ -2,7 +2,7 @@
 
 require 'bundler/setup'
 require 'mongoid'
-require 'mongoid/paranoia'
+require 'mongoid/archivable'
 require 'benchmark'
 
 Mongoid.configure do |config|
@@ -16,19 +16,19 @@ class Model
   index({ text: 'text' })
 end
 
-class ParanoidModel
+class ArchivableModel
   include Mongoid::Document
-  include Mongoid::Paranoia
+  include Mongoid::Archivable
   field :text, type: String
 
   index({ text: 'text' })
 end
 
-class MetaParanoidModel
+class MetaArchivableModel
   include Mongoid::Document
   field :text, type: String
-  field :deleted_at, type: Time
-  default_scope -> { where(deleted_at: nil) }
+  field :archived_at, type: Time
+  default_scope -> { where(archived_at: nil) }
 
   index({ text: 'text' })
 end
@@ -38,9 +38,9 @@ if ENV['FORCE']
   ::Mongoid::Tasks::Database.create_indexes
 
   n = 50_000
-  n.times {|i| Model.create(text: "text #{i}") }
-  n.times {|i| ParanoidModel.create(text: "text #{i}") }
-  n.times {|i| MetaParanoidModel.create(text: "text #{i}") }
+  n.times {|_i| Model.create(text: "text #{i}") }
+  n.times {|_i| ArchivableModel.create(text: "text #{i}") }
+  n.times {|_i| MetaArchivableModel.create(text: "text #{i}") }
 end
 
 n = 100
@@ -48,18 +48,18 @@ n = 100
 puts 'text_search benchmark ***'
 Benchmark.bm(20) do |x|
   x.report('without') { n.times { Model.text_search('text').execute } }
-  x.report('with')    { n.times { ParanoidModel.text_search('text').execute } }
-  x.report('meta')    { n.times { MetaParanoidModel.text_search('text').execute } }
-  x.report('unscoped meta') { n.times { MetaParanoidModel.unscoped.text_search('text').execute } }
-  x.report('unscoped paranoid') { n.times { ParanoidModel.unscoped.text_search('text').execute } }
+  x.report('with')    { n.times { ArchivableModel.text_search('text').execute } }
+  x.report('meta')    { n.times { MetaArchivableModel.text_search('text').execute } }
+  x.report('unscoped meta') { n.times { MetaArchivableModel.unscoped.text_search('text').execute } }
+  x.report('unscoped archivable') { n.times { ArchivableModel.unscoped.text_search('text').execute } }
 end
 
 puts ''
 puts 'Pluck all ids benchmark ***'
 Benchmark.bm(20) do |x|
   x.report('without') { n.times { Model.all.pluck(:id) } }
-  x.report('with')    { n.times { ParanoidModel.all.pluck(:id) } }
-  x.report('meta')    { n.times { MetaParanoidModel.all.pluck(:id) } }
-  x.report('unscoped meta') { n.times { MetaParanoidModel.unscoped.all.pluck(:id) } }
-  x.report('unscoped paranoid') { n.times { ParanoidModel.unscoped.all.pluck(:id) } }
+  x.report('with')    { n.times { ArchivableModel.all.pluck(:id) } }
+  x.report('meta')    { n.times { MetaArchivableModel.all.pluck(:id) } }
+  x.report('unscoped meta') { n.times { MetaArchivableModel.unscoped.all.pluck(:id) } }
+  x.report('unscoped archivable') { n.times { ArchivableModel.unscoped.all.pluck(:id) } }
 end

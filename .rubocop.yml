@@ -28,10 +28,6 @@ Layout/LineLength:
 Layout/SpaceInsideBlockBraces:
   SpaceBeforeBlockParameters: false
 
-Naming/FileName:
-  Exclude:
-    - 'lib/mongoid-paranoia.rb'
-
 Style/Documentation:
   Enabled: false
 

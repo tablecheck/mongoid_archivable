@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 module Mongoid
-  module Paranoia
-    VERSION = '0.5.0'
+  module Archivable
+    VERSION = '0.1.0'
   end
 end

@@ -24,10 +24,10 @@ class Address
 
   embedded_in :addressable, polymorphic: true do
     def extension
-      "Testing"
+      'Testing'
     end
     def doctor?
-      title == "Dr"
+      title == 'Dr'
     end
   end
 
@@ -37,9 +37,9 @@ class Address
 
   scope :without_postcode, -> {where(postcode: nil)}
   scope :rodeo, -> {
-    where(street: "Rodeo Dr") do
+    where(street: 'Rodeo Dr') do
       def mansion?
-        all? { |address| address.street == "Rodeo Dr" }
+        all? { |address| address.street == 'Rodeo Dr' }
       end
     end
   }
@@ -57,11 +57,11 @@ class Address
 
   class << self
     def california
-      where(state: "CA")
+      where(state: 'CA')
     end
 
     def homes
-      where(address_type: "Home")
+      where(address_type: 'Home')
     end
 
     def streets

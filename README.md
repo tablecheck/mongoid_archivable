@@ -1,18 +1,45 @@
-# Paranoid Documents for Mongoid
-[![Build Status](https://travis-ci.org/simi/mongoid_paranoia.svg?branch=master)](https://travis-ci.org/simi/mongoid_paranoia) [![Gem Version](https://img.shields.io/gem/v/mongoid_paranoia.svg)](https://rubygems.org/gems/mongoid_paranoia) [![Gitter chat](https://badges.gitter.im/simi/mongoid_paranoia.svg)](https://gitter.im/simi/mongoid_paranoia)
+# Mongoid::Archivable
 
-`Mongoid::Paranoia` enables a "soft delete" of Mongoid documents. Instead of being removed from the database, paranoid docs are flagged with a `deleted_at` timestamp and are ignored from queries by default.
+[![Build Status](https://travis-ci.org/tablecheck/mongoid_archivable.svg?branch=master)](https://travis-ci.org/simi/mongoid_archivable)
+[![Gem Version](https://img.shields.io/gem/v/mongoid_archivable.svg)](https://rubygems.org/gems/mongoid_archivable)
 
-The `Mongoid::Paranoia` functionality was originally supported in Mongoid itself, but was dropped from version 4.0.0 onwards. This gem was extracted from the [Mongoid 3.0.0-stable branch](https://github.com/mongoid/mongoid/tree/3.0.0-stable). This gem should not be used with Mongoid versions 3.x and prior. Current master branch targeted on Mongoid 6.0. With release 0.3.0 Mongoid 4 and 5 versions will be dropped.
+`Mongoid::Archivable` enables archiving (soft delete) of Mongoid documents.
+Instead of being removed from the database, archived docs are flagged with an `archived_at` timestamp.
+This gem is forked from [mongoid_paranoia](https://github.com/simi/mongoid_paranoia).
 
-**Caution:** This repo/gem `mongoid_paranoia` (underscored) is different than [mongoid-paranoia](https://github.com/haihappen/mongoid-paranoia) (hyphenated). The goal of `mongoid-paranoia` (hyphenated) is to stay API compatible and it only accepts security fixes.
+Note that this gem `mongoid_archivable` (underscored) is different than
+[mongoid-archivable](https://github.com/Sign2Pay/mongoid-archivable) (hyphenated).
+
+#### Warning
+
+Versions prior to 1.0.0 are in **alpha** state. Behaviors, APIs, method names, etc.
+may change anytime without warning. Please lock your version, excercise care when upgrading,
+and write tests.
+
+#### TODO
+
+* [ ] Support embedded documents.
+* [ ] Support model-level configuration.
+* [ ] Allow rename archive field alias.
+
+#### Differences with Mongoid::Paranoia
+
+* The flag named is `archived_at` rather than `deleted_at`.
+The name `deleted_at` is confusing with respect to hard deletion.
+* This gem does **not** set a default scope on root (non-embedded) docs.
+Use the `.current` (non-archived) and `.archived` query scopes as needed.
+* Mongoid::Paranoia overrides the `delete` and `destroy` methods with new "soft-delete" behavior.
+This gem leaves `delete` and `destroy` as-is.
+* Requires calling the `archivable` macro function in the model definition to enable.
+Model-specific configuration is possible.
+* Monkey patches and hackery are removed.
 
 ## Installation
 
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'mongoid_paranoia'
+gem 'mongoid_archivable'
 ```
 
 ## Usage
@@ -20,93 +47,130 @@ gem 'mongoid_paranoia'
 ```ruby
 class Person
   include Mongoid::Document
-  include Mongoid::Paranoia
+  include Mongoid::Archivable
+
+  # TODO: archivable
 end
 
-person.delete   # Sets the deleted_at field to the current time, ignoring callbacks.
-person.delete!  # Permanently deletes the document, ignoring callbacks.
-person.destroy  # Sets the deleted_at field to the current time, firing callbacks.
-person.destroy! # Permanently deletes the document, firing callbacks.
-person.restore  # Brings the "deleted" document back to life.
-person.restore(:recursive => true) # Brings "deleted" associated documents back to life recursively
+person.archive  # Sets the archived_at field to the current time, firing callbacks.
+
+# TODO
+person.archive(callbacks: false) # Sets the archived_at field to the current time, ignoring callbacks.
+
+person.restore # Brings the "archived" document back to life.
+
+person.restore(recursive: true) # Brings "archived" associated documents back to life recursively
 ```
 
-The documents that have been "flagged" as deleted (soft deleted) can be accessed at any time by calling the deleted class method on the class.
+#### Configuration
+
+You can configure the archivable field naming on a global basis. Within the context of a Rails app this is done via an initializer.
 
 ```ruby
-Person.deleted # Returns documents that have been "flagged" as deleted.
-```
+# config/initializers/mongoid_archivable.rb
 
-You can also access all documents (both deleted and non-deleted) at any time by using the `unscoped` class method:
-
-```ruby
-Person.unscoped.all # Returns all documents, both deleted and non-deleted
-```
-
-You can also configure the paranoid field naming on a global basis.  Within the context of a Rails app this is done via an initializer.
-
-```ruby
-# config/initializers/mongoid_paranoid.rb
-
-Mongoid::Paranoia.configure do |c|
-  c.paranoid_field = :myFieldName
+Mongoid::Archivable.configure do |c|
+  c.archived_field = :my_field_name
 end
 ```
 
-### Validations
-#### You need override uniqueness validates
+#### Querying
 
 ```ruby
-validates :title, uniqueness: { conditions: -> { where(deleted_at: nil) } }
+Person.all # Returns all documents, both archived and non-archived
+
+Person.current # Returns documents that have been "flagged" as archived.
+
+Person.archived # Returns documents that have been "flagged" as archived.
 ```
 
-### Callbacks
+#### Callbacks
 
-#### Restore
-`before_restore`, `after_restore` and `around_restore` callbacks are added to your model. They work similarly to the `before_destroy`, `after_destroy` and `around_destroy` callbacks.
+Archivable documents have the following new callbacks. Note that these are **not** fired on `#destroy`.
 
-#### Remove
-`before_remove`, `after_remove` and `around_remove` are added to your model. They are called when record is deleted permanently .
+* `before_archive`
+* `after_archive`
+* `around_archive`
+* `before_restore`
+* `after_restore`
+* `around_restore`
 
-#### Example
 ```ruby
 class User
   include Mongoid::Document
-  include Mongoid::Paranoia
+  include Mongoid::Archivable
+
+  before_archive :before_archive_action
+  after_archive :after_archive_action
+  around_archive :around_archive_action
 
   before_restore :before_restore_action
-  after_restore  :after_restore_action
+  after_restore :after_restore_action
   around_restore :around_restore_action
 
-  private
-
-  def before_restore_action
-    puts "BEFORE"
-  end
-
-  def after_restore_action
-    puts "AFTER"
-  end
-
-  def around_restore_action
-    puts "AROUND - BEFORE"
-    yield # restoring
-    puts "AROUND - AFTER"
+  def before_archive_action
+    throw(:abort) if name == 'Pete'
   end
 end
 ```
 
-## TODO
-- get rid of [monkey_patches.rb](https://github.com/simi/mongoid_paranoia/blob/master/lib/mongoid/paranoia/monkey_patches.rb)
-- [review persisted? behaviour](https://github.com/simi/mongoid_paranoia/issues/2)
+#### Relation Dependencies
 
-## Authors
+This gem add two new dependency handling strategies:
 
-* original [Mongoid](https://github.com/mongoid/mongoid) implementation by [@durran](https://github.com/durran)
-* extracted from [Mongoid](https://github.com/mongoid/mongoid) by [@simi](https://github.com/simi)
-* [documentation improvements](https://github.com/simi/mongoid_paranoia/pull/3) by awesome [@loopj](https://github.com/loopj)
-* [latest mongoid support, restore_callback support](https://github.com/simi/mongoid_paranoia/pull/8) by fabulous [@zhouguangming](https://github.com/zhouguangming)
+* `:archive` - Invokes `#archive` and callbacks on each dependency, recursively
+including dependencies of dependencies.
+* `:archive_without_callbacks` - Calls `.set(archived_at: Time.now)` on the
+dependency scope. Much faster but does not support callbacks or dependency recursion.
 
+```
+class User
+  include Mongoid::Document
+  include Mongoid::Archivable
+
+  has_many :pokemons, dependent: :archive
+  belongs_to :gym, dependent: :archive_without_callbacks
+end
+```
+
+If the dependent model is not archivable, it will be ignored without any effect.
+
+In addition, dependency strategies `:nullify`, `:restrict_with_exception`,
+and `:restrict_with_error` will be applied when archiving documents.
+`:destroy` and `:delete_all` are intentionally ignored.
+
+### Gotchas
+
+#### Uniqueness validations
+
+Set `scope: :archived_at` in your uniqueness validations to prevent validating against archived documents.
+
+```ruby
+validates_uniqueness_of :title, scope: :archived_at
+```
+
+#### Indexes
+
+Be sure to add `archived_at` to your query indexes. As a rule-of-thumb, we recommend
+to add `archived_at` as the final key; this will create a compound index that will work
+with or without `archived_at` in the query.
+
+```ruby
+index category: 1, title: 1, archived_at: 1
+```
+
+Note that this may not give the best performance in all cases, e.g. when doing a range query
+on the value of `archived_at`, so please refer to the
+[MongoDB Indexes documentation](https://docs.mongodb.com/manual/indexes/).
+
+## Mongoid::Paranoia Migration Checklist
+
+1. Add `mongoid_archivable` to your gemspec **after** `mongoid_paranoia`
+2. Configure your archived field name as `:deleted_at` for backwards compatibility.
+3. Add `.current` to your queries as necessary. You can remove usages of `.unscoped`.
+4. In your relations, replace `dependent: :destroy` with `dependent: :archive` as necessary.
+
+Note that it is possible to migrate each model individually.
 
 ## Contributing
 
@@ -115,3 +179,14 @@ end
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+
+## About Us
+
+Mongoid::Archivable is made with ❤ by [TableCheck](https://www.tablecheck.com/en/join/),
+the leading restaurant reservation and guest management app maker.
+If **you** are a ninja-level 🥷 coder (Javascript/Ruby/Elixir/Python/Go),
+designer, product manager, data scientist, QA, etc. and are ready to join us in Tokyo, Japan
+or work remotely, please get in touch at [careers@tablecheck.com](mailto:careers@tablecheck.com).
+
+Shout out to Durran Jordan and Josef Šimánek for their original work on
+[Mongoid::Paranoia](https://github.com/simi/mongoid_paranoia).

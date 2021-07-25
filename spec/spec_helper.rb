@@ -2,7 +2,7 @@ $LOAD_PATH.unshift(File.dirname(__FILE__))
 $LOAD_PATH.unshift(File.join(File.dirname(__FILE__), '..', 'lib'))
 
 require 'mongoid'
-require 'mongoid/paranoia'
+require 'mongoid/archivable'
 require 'rspec'
 
 # When testing locally we use the database named mongoid_test. However when
@@ -10,7 +10,7 @@ require 'rspec'
 # names for each process running since we do not have transactions and want a
 # clean slate before each spec run.
 def database_id
-  'mongoid_paranoia_test'
+  'mongoid_archivable_test'
 end
 
 # Set the database that the spec suite connects to.
@@ -40,4 +40,4 @@ ActiveSupport::Inflector.inflections do |inflect|
   inflect.singular('address_components', 'address_component')
 end
 
-Dir[File.join(File.dirname(__FILE__), 'app/models/*.rb')].each{ |f| require f }
+Dir[File.join(File.dirname(__FILE__), 'app/models/*.rb')].each {|f| require(f) }
