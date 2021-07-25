@@ -99,17 +99,17 @@ RSpec.describe 'Mongoid::Archivable#restore' do
         subject.restore_relations
       end
 
-      it { expect { subject.restore_relations }.to change { ArchHasOne.unarchived.count    }.by(1) }
-      it { expect { subject.restore_relations }.to change { ArchHasMany.unarchived.count   }.by(2) }
-      it { expect { subject.restore_relations }.to change { ArchHabtm.unarchived.count     }.by(3) }
-      it { expect { subject.restore_relations }.to change { ArchBelongsTo.unarchived.count }.by(1) }
+      it { expect { subject.restore_relations }.to change { ArchHasOne.current.count    }.by(1) }
+      it { expect { subject.restore_relations }.to change { ArchHasMany.current.count   }.by(2) }
+      it { expect { subject.restore_relations }.to change { ArchHabtm.current.count     }.by(3) }
+      it { expect { subject.restore_relations }.to change { ArchBelongsTo.current.count }.by(1) }
     end
 
     context 'does not affect embedded archivable documents' do
       before { prepare }
 
       it { expect{ subject.restore_relations}.to_not change{ subject.arch_embeds_one } }
-      it { expect{ subject.restore_relations}.to_not change{ subject.arch_embeds_many.unarchived.count } }
+      it { expect{ subject.restore_relations}.to_not change{ subject.arch_embeds_many.current.count } }
     end
 
     context 'does not affect non-archivable documents' do
@@ -139,11 +139,11 @@ RSpec.describe 'Mongoid::Archivable#restore' do
         subject.restore
       end
 
-      it { expect { subject.restore_relations}.to change { ArchHasOne.unarchived.count  }.by(2) }
-      it { expect { subject.restore_relations}.to change { ArchHasMany.unarchived.count }.by(3) }
+      it { expect { subject.restore_relations}.to change { ArchHasOne.current.count  }.by(2) }
+      it { expect { subject.restore_relations}.to change { ArchHasMany.current.count }.by(3) }
 
       # Untestable due to infinite recursion condition in #archive
-      # it { expect{ ArchHabtm.unscoped.each(&:restore)}.to change { ArchHabtm.unarchived.count }.by(5) }
+      # it { expect{ ArchHabtm.unscoped.each(&:restore)}.to change { ArchHabtm.current.count }.by(5) }
 
       it { expect { subject.restore_relations }.to_not change { NormHasOne.count  } }
       it { expect { subject.restore_relations }.to_not change { NormHasMany.count } }

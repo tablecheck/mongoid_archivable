@@ -3,10 +3,14 @@
 module Mongoid
   module Archivable
     class Configuration
-      attr_accessor :archivable_field
+      attr_accessor :archived_field,
+                    :archived_scope,
+                    :nonarchived_scope
 
       def initialize
-        @archivable_field = :archived_at
+        @archived_field = :archived_at
+        @archived_scope = :archived
+        @nonarchived_scope = :current
       end
     end
   end

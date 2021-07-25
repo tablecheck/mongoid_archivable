@@ -1,10 +1,10 @@
 require 'spec_helper'
 
 RSpec.describe Mongoid::Archivable::Configuration do
-  context 'configuring the archivable_field setting' do
+  context 'configuring the archived_field setting' do
     before do
       Mongoid::Archivable.configure do |c|
-        c.archivable_field = :myFieldName
+        c.archived_field = :my_field_name
       end
     end
 
@@ -16,9 +16,9 @@ RSpec.describe Mongoid::Archivable::Configuration do
         end
       end
 
-      it 'allows custom setting of the archivable_field' do
+      it 'allows custom setting of the archived_field' do
         archivable_configured = ArchivableConfigured.new
-        expect(archivable_configured.attribute_names).to include('myFieldName')
+        expect(archivable_configured.attribute_names).to include('my_field_name')
       end
 
       after(:each) do
@@ -38,22 +38,22 @@ RSpec.describe Mongoid::Archivable::Configuration do
         end
       end
 
-      it 'restores the archivable_field to the default setting' do
+      it 'restores the archived_field to the default setting' do
         archivable_configured = ArchivableConfiguredReset.new
         expect(archivable_configured.attribute_names).to include('archived_at')
       end
     end
   end
 
-  describe '#archivable_field' do
+  describe '#archived_field' do
     it 'initializes with default value set to :archived_at' do
-      expect(Mongoid::Archivable::Configuration.new.archivable_field).to eq(:archived_at)
+      expect(Mongoid::Archivable::Configuration.new.archived_field).to eq(:archived_at)
     end
 
     it 'can be updated' do
       config = Mongoid::Archivable::Configuration.new
-      config.archivable_field = :myFieldName
-      expect(config.archivable_field).to eq(:myFieldName)
+      config.archived_field = :my_field_name
+      expect(config.archived_field).to eq(:my_field_name)
     end
   end
 end

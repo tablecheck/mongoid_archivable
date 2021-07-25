@@ -1,17 +1,37 @@
 # Mongoid::Archivable
 
-[![Build Status](https://travis-ci.org/tablecheck/mongoid_archivable.svg?branch=master)](https://travis-ci.org/simi/mongoid_archivable) [![Gem Version](https://img.shields.io/gem/v/mongoid_archivable.svg)](https://rubygems.org/gems/mongoid_archivable)
+[![Build Status](https://travis-ci.org/tablecheck/mongoid_archivable.svg?branch=master)](https://travis-ci.org/simi/mongoid_archivable)
+[![Gem Version](https://img.shields.io/gem/v/mongoid_archivable.svg)](https://rubygems.org/gems/mongoid_archivable)
 
-`Mongoid::Archivable` enables archiving (soft delete) of Mongoid documents. Instead of being removed from the database, archived docs are flagged with an `archived_at` timestamp. This gem is forked from [mongoid_paranoia](https://github.com/simi/mongoid_paranoia).
+`Mongoid::Archivable` enables archiving (soft delete) of Mongoid documents.
+Instead of being removed from the database, archived docs are flagged with an `archived_at` timestamp.
+This gem is forked from [mongoid_paranoia](https://github.com/simi/mongoid_paranoia).
 
-Note that this gem `mongoid_archivable` (underscored) is different than [mongoid-archivable](https://github.com/Sign2Pay/mongoid-archivable) (hyphenated).
+Note that this gem `mongoid_archivable` (underscored) is different than
+[mongoid-archivable](https://github.com/Sign2Pay/mongoid-archivable) (hyphenated).
+
+#### Warning
+
+Versions prior to 1.0.0 are in **alpha** state. Behaviors, APIs, method names, etc.
+may change anytime without warning. Please lock your version, excercise care when upgrading,
+and write tests.
+
+#### TODO
+
+* [ ] Support embedded documents.
+* [ ] Support model-level configuration.
+* [ ] Allow rename archive field alias.
 
 #### Differences with Mongoid::Paranoia
 
-* The flag named is `archived_at` rather than `deleted_at`. The name `deleted_at` is confusing with respect to hard deletion.
-* This gem does **not** set a default scope on root (non-embedded) docs. Use the `.unarchived` (live) and `.archived` query scopes as needed.
-* Mongoid::Paranoia overrides the `delete` and `destroy` methods with new "soft-delete" behavior. This gem leaves `delete` and `destroy` as-is.
-* Requires calling the `archivable` macro function in the model definition to enable. Model-specific configuration is possible.
+* The flag named is `archived_at` rather than `deleted_at`.
+The name `deleted_at` is confusing with respect to hard deletion.
+* This gem does **not** set a default scope on root (non-embedded) docs.
+Use the `.current` (non-archived) and `.archived` query scopes as needed.
+* Mongoid::Paranoia overrides the `delete` and `destroy` methods with new "soft-delete" behavior.
+This gem leaves `delete` and `destroy` as-is.
+* Requires calling the `archivable` macro function in the model definition to enable.
+Model-specific configuration is possible.
 * Monkey patches and hackery are removed.
 
 ## Installation
@@ -29,8 +49,7 @@ class Person
   include Mongoid::Document
   include Mongoid::Archivable
 
-  # TODO
-  archivable
+  # TODO: archivable
 end
 
 person.archive  # Sets the archived_at field to the current time, firing callbacks.
@@ -51,7 +70,7 @@ You can configure the archivable field naming on a global basis. Within the cont
 # config/initializers/mongoid_archivable.rb
 
 Mongoid::Archivable.configure do |c|
-  c.archivable_field = :my_field_name
+  c.archived_field = :my_field_name
 end
 ```
 
@@ -60,7 +79,7 @@ end
 ```ruby
 Person.all # Returns all documents, both archived and non-archived
 
-Person.unarchived # Returns documents that have been "flagged" as archived.
+Person.current # Returns documents that have been "flagged" as archived.
 
 Person.archived # Returns documents that have been "flagged" as archived.
 ```
@@ -148,8 +167,8 @@ on the value of `archived_at`, so please refer to the
 
 1. Add `mongoid_archivable` to your gemspec **after** `mongoid_paranoia`
 2. Configure your archived field name as `:deleted_at` for backwards compatibility.
-3. Add `.unarchived` to your queries as necessary. You can remove usages of `.unscoped`.
-4. In your relations, replace `dependent: :destroy` with `dependent: :archive`
+3. Add `.current` to your queries as necessary. You can remove usages of `.unscoped`.
+4. In your relations, replace `dependent: :destroy` with `dependent: :archive` as necessary.
 
 Note that it is possible to migrate each model individually.
 
@@ -160,3 +179,14 @@ Note that it is possible to migrate each model individually.
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+
+## About Us
+
+Mongoid::Archivable is made with ❤ by [TableCheck](https://www.tablecheck.com/en/join/),
+the leading restaurant reservation and guest management app maker.
+If **you** are a ninja-level 🥷 coder (Javascript/Ruby/Elixir/Python/Go),
+designer, product manager, data scientist, QA, etc. and are ready to join us in Tokyo, Japan
+or work remotely, please get in touch at [careers@tablecheck.com](mailto:careers@tablecheck.com).
+
+Shout out to Durran Jordan and Josef Šimánek for their original work on
+[Mongoid::Paranoia](https://github.com/simi/mongoid_paranoia).

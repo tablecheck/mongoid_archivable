@@ -161,7 +161,7 @@ RSpec.describe 'Mongoid::Archivable#archive' do
       end
 
       it 'does not return the document in a find' do
-        expect { ArchivablePost.unarchived.find(post.id) }.to raise_error(Mongoid::Errors::DocumentNotFound)
+        expect { ArchivablePost.current.find(post.id) }.to raise_error(Mongoid::Errors::DocumentNotFound)
         expect { ArchivablePost.find(post.id) }.to_not raise_error(Mongoid::Errors::DocumentNotFound)
       end
     end

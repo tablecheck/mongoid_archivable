@@ -33,7 +33,7 @@ module Mongoid
       #
       # @example
       #   Mongoid::Archivable.configure do |c|
-      #     c.archivable_field = :myFieldName
+      #     c.archived_field = :my_field_name
       #   end
       def configure
         yield(configuration)
@@ -50,10 +50,12 @@ module Mongoid
       class_attribute :archivable
       self.archivable = true
 
-      field Archivable.configuration.archivable_field, as: :archived_at, type: Time
+      config = Archivable.configuration
 
-      scope :unarchived, -> { where(archived_at: nil) }
-      scope :archived, -> { ne(archived_at: nil) }
+      field config.archived_field, as: :archived_at, type: Time
+
+      scope config.nonarchived_scope, -> { where(archived_at: nil) }
+      scope config.archived_scope, -> { ne(archived_at: nil) }
 
       define_model_callbacks :archive
       define_model_callbacks :restore
@@ -73,7 +75,7 @@ module Mongoid
         raise Errors::ReadonlyDocument.new(self.class) if readonly?
         now = Time.now
         self.archived_at = now
-        _archivable_update('$set' => { archivable_field => now })
+        _archivable_update('$set' => { archived_field => now })
         true
       end
 
@@ -101,7 +103,7 @@ module Mongoid
       end
 
       def restore_without_callbacks(options = {})
-        _archivable_update('$unset' => { archivable_field => true })
+        _archivable_update('$unset' => { archived_field => true })
         attributes.delete('archived_at') # TODO: does this need database field name
         restore_relations if options[:recursive]
         true
@@ -134,11 +136,11 @@ module Mongoid
       # Get the field to be used for archivable operations.
       #
       # @example Get the archivable field.
-      #   document.archivable_field
+      #   document.archived_field
       #
       # @return [ String ] The archived at field.
-      def archivable_field
-        field = Archivable.configuration.archivable_field
+      def archived_field
+        field = Archivable.configuration.archived_field
         embedded? ? "#{atomic_position}.#{field}" : field
       end
 
