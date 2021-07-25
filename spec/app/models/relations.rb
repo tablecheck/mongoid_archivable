@@ -220,7 +220,6 @@ class ArchHabtm
   belongs_to :arch_has_many, dependent: :archive
 
   has_and_belongs_to_many :norm_habtm, dependent: :destroy
-  has_and_belongs_to_many :recursive, class_name: 'ArchHabtm', inverse_of: :recursive, dependent: :archive
 end
 
 class ArchEmbedsOne

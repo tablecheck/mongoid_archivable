@@ -61,6 +61,7 @@ module Mongoid
       define_model_callbacks :restore
 
       def archive(options = {})
+        return if archived?
         raise Errors::ReadonlyDocument.new(self.class) if readonly?
         run_callbacks(:archive) do
           if catch(:abort) { apply_archive_dependencies! }
@@ -72,6 +73,7 @@ module Mongoid
       end
 
       def archive_without_callbacks(_options = {})
+        return if archived?
         raise Errors::ReadonlyDocument.new(self.class) if readonly?
         now = Time.now
         self.archived_at = now
@@ -99,10 +101,12 @@ module Mongoid
       # @example Restore the associated documents from archived state.
       #   document.restore(recursive: true)
       def restore(options = {})
+        return unless archived?
         run_callbacks(:restore) { restore_without_callbacks(options) }
       end
 
       def restore_without_callbacks(options = {})
+        return unless archived?
         _archivable_update('$unset' => { archived_field => true })
         attributes.delete('archived_at') # TODO: does this need database field name
         restore_relations if options[:recursive]

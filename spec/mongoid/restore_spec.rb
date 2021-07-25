@@ -124,15 +124,10 @@ RSpec.describe 'Mongoid::Archivable#restore' do
     end
 
     context 'recursion' do
-
       let!(:arch_habtm_norm_has_one)  { subject.arch_habtm.first.norm_has_one = NormHasOne.create  } # not restored
       let!(:arch_habtm_arch_has_one)  { subject.arch_habtm.first.arch_has_one = ArchHasOne.create  } # restored
       let!(:arch_habtm_norm_has_many) { 2.times.map { subject.arch_habtm.first.norm_has_many  = NormHasMany.create } } # not restored
       let!(:arch_habtm_arch_has_many) { 3.times.map { subject.arch_habtm.second.arch_has_many = ArchHasMany.create } } # restored
-
-      # Untestable due to infinite recursion condition in #archive
-      # let!(:arch_habtm_norm_habtm)    { 3.times.map { subject.arch_habtm.second.norm_habtm.create } } # not restored
-      # let!(:arch_habtm_recursive)     { 2.times.map { subject.arch_habtm.first.recursive.create }   } # restored
 
       before do
         subject.archive
@@ -141,10 +136,6 @@ RSpec.describe 'Mongoid::Archivable#restore' do
 
       it { expect { subject.restore_relations}.to change { ArchHasOne.current.count  }.by(2) }
       it { expect { subject.restore_relations}.to change { ArchHasMany.current.count }.by(3) }
-
-      # Untestable due to infinite recursion condition in #archive
-      # it { expect{ ArchHabtm.unscoped.each(&:restore)}.to change { ArchHabtm.current.count }.by(5) }
-
       it { expect { subject.restore_relations }.to_not change { NormHasOne.count  } }
       it { expect { subject.restore_relations }.to_not change { NormHasMany.count } }
       it { expect { subject.restore_relations }.to_not change { NormHabtm.count   } }
